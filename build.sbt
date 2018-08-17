@@ -56,6 +56,30 @@ lazy val npmSettings = Seq(
   )
 )
 
+// run JS tests inside Chrome, due to jsdom not supporting fetch
+lazy val browserTestSettings = Seq(
+  Test/jsEnv := {
+    val debugging = true // set to true to help debugging
+    println("fooo")
+
+    new org.scalajs.jsenv.selenium.SeleniumJSEnv(
+      {
+        val options = new org.openqa.selenium.chrome.ChromeOptions()
+        val args = Seq(
+          "auto-open-devtools-for-tabs", // devtools needs to be open to capture network requests
+          "allow-file-access-from-files" // change the origin header from 'null' to 'file'
+        ) ++ (if (debugging) Seq.empty else Seq("headless"))
+        options.addArguments(args: _*)
+        val capabilities = org.openqa.selenium.remote.DesiredCapabilities.chrome()
+        capabilities.setCapability(org.openqa.selenium.chrome.ChromeOptions.CAPABILITY, options)
+        capabilities
+      },
+      org.scalajs.jsenv.selenium.SeleniumJSEnv.Config().withKeepAlive(debugging)
+    )
+  }
+)
+
+
 // The root project
 lazy val root = project.in(file("."))
   .settings(noPublish)
@@ -70,7 +94,9 @@ lazy val router = project.in(file("router"))
     libraryDependencies ++= Seq(
       "org.scalatest" %%% "scalatest" % Versions.scalaTest % "test"
     )
-  ).enablePlugins(ScalaJSBundlerPlugin)
+  )
+  .enablePlugins(ScalaJSBundlerPlugin)
+  .settings(browserTestSettings)
 
 // Some common utilities
 lazy val common = project.in(file("common"))
@@ -149,12 +175,16 @@ lazy val material = project.in(file("material"))
 lazy val sampleApp = project.in(file("sampleApp"))
   .settings(
     name := "sampleApp",
-    webpackBundlingMode := scalajsbundler.BundlingMode.LibraryAndApplication(),
+    //webpackBundlingMode := scalajsbundler.BundlingMode.LibraryAndApplication(),
     emitSourceMaps := true,
     scalaJSUseMainModuleInitializer := true,
 
+    test/parallelExecution := false,
+
     libraryDependencies ++= Seq(
+      "org.scala-js" %%% "scalajs-dom" % "0.9.6",
       "com.github.ahnfelt" %%% "react4s" % Versions.react4s,
+      "com.softwaremill.sttp" %%% "core" % "1.3.0",
       "org.scalatest" %%% "scalatest" % Versions.scalaTest % "test"
     ),
 
@@ -169,6 +199,7 @@ lazy val sampleApp = project.in(file("sampleApp"))
   )
   .settings(noPublish:_*)
   .settings(npmSettings:_*)
+  .settings(browserTestSettings)
   .enablePlugins(ScalaJSBundlerPlugin)
   .dependsOn(router, common, components, material)
 
