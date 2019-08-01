@@ -29,7 +29,8 @@ final case class SampleAppState(
     Person("Andreas", "Gies", 50, "andreas@wayofquality.de"),
     Person("Karin", "Gies", 52, "kgies@godea-life.de"),
     Person("Tatjana", "Gies", 28, "gies_tat@yahoo.com"),
-    Person("Sabrina", "Gies", 24, "sabrina@godea-life.de")
+    Person("Sabrina", "Gies", 24, "sabrina@godea-life.de"),
+    Person("First","Last",1000,"")
     // scalastyle:on magic.number
   ),
 

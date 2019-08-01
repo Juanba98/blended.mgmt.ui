@@ -1,6 +1,7 @@
 package blended.ui.components.reacttable
-
-import blended.ui.material.MaterialUI._
+import blended.ui.material.MaterialUI.{TableSortLabel, _}
+import blended.material.ui.MatIcons.{AddCircleIcon, RemoveCircleIcon}
+import blended.mgmt.ui.theme.Theme.IconStyles
 import com.github.ahnfelt.react4s._
 
 import scala.reflect.ClassTag
@@ -54,8 +55,20 @@ trait ReactTable[TableData] {
     name : String,
     renderer : CellRenderer[_],
     numeric : Boolean = false,
-    width : Option[String] = None
+    width : Option[String] = None,
+    label: String
+
   )
+
+  def desc (a:Array[Int],b:Array[Int], orderBy:Int) : Int = {
+
+    if (a(orderBy).(b(orderBy)){
+      return -1
+    }else{
+
+    }
+
+  }
 
   final case class TableProperties(
     // The configuration of the table columns
@@ -78,7 +91,8 @@ trait ReactTable[TableData] {
 
       // bundle the entire row into a div with the appropriate style
       TableRow(
-        Tags(cells)
+        Tags(cells),
+
       )
     }
   }
@@ -93,14 +107,33 @@ trait ReactTable[TableData] {
 
     override def render(get: Get): Node = {
       TableHead(
-        TableRow(
+
+
+
+
           Tags(
+
+
             get(props).columns.map { cfg =>
-              TableCell(J("numeric", cfg.numeric), Text(cfg.name.capitalize))
-            }
+              TableCell(J("numeric", cfg.numeric),Text(cfg.name.capitalize),A.onLeftClick({ _ =>println("pls")}),/*IconButton(
+                IconStyles,
+                RemoveCircleIcon(),
+
+              )*/
+              )
+
+
+
+
+
+            },
+
           )
+
         )
-      )
+
+
+
     }
   }
 
@@ -113,6 +146,7 @@ trait ReactTable[TableData] {
       Paper(
         Table(
           Component(ReactTableHeader, p),
+
           Tags(get(data).map { r =>
             Component(ReactTableRow, r, p).withKey(p.keyExtractor(r))
           })

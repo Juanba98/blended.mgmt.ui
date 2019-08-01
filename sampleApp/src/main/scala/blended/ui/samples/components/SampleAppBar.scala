@@ -30,6 +30,7 @@ object SampleAppBar {
         MaterialUI.Toolbar(
           children:_*
         )
+
       )
     }
   }
