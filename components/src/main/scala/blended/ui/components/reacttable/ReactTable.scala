@@ -55,20 +55,10 @@ trait ReactTable[TableData] {
     name : String,
     renderer : CellRenderer[_],
     numeric : Boolean = false,
-    width : Option[String] = None,
-    label: String
-
+    width : Option[String] = None
   )
 
-  def desc (a:Array[Int],b:Array[Int], orderBy:Int) : Int = {
 
-    if (a(orderBy).(b(orderBy)){
-      return -1
-    }else{
-
-    }
-
-  }
 
   final case class TableProperties(
     // The configuration of the table columns
@@ -84,6 +74,7 @@ trait ReactTable[TableData] {
   final case class ReactTableRow(row: P[TableData], props: P[TableProperties]) extends Component[NoEmit] {
     override def render(get: Get): Node = {
 
+
       // determine the sequence of Tags to be displayed in this row
       val cells : Seq[Tag] = get(props).columns.map { col =>
         TableCell(J("numeric", col.numeric), col.renderer(get(row)))
@@ -91,7 +82,10 @@ trait ReactTable[TableData] {
 
       // bundle the entire row into a div with the appropriate style
       TableRow(
+
         Tags(cells),
+        A.onLeftClick({ _ =>println(get(row))})
+
 
       )
     }
@@ -115,17 +109,18 @@ trait ReactTable[TableData] {
 
 
             get(props).columns.map { cfg =>
-              TableCell(J("numeric", cfg.numeric),Text(cfg.name.capitalize),A.onLeftClick({ _ =>println("pls")}),/*IconButton(
+              TableCell(J("numeric", cfg.numeric),Text(cfg.name.capitalize),IconButton(
                 IconStyles,
-                RemoveCircleIcon(),
+                RemoveCircleIcon(A.onLeftClick({ _ =>println("IconPressed")})
 
-              )*/
-              )
-
+                )
 
 
+              ),
 
 
+
+          )
             },
 
           )
@@ -137,7 +132,7 @@ trait ReactTable[TableData] {
     }
   }
 
-  final case class ReactTable(data: P[Seq[TableData]], props: P[TableProperties]) extends Component[NoEmit] {
+  final case class ReactTable(data: P[Seq[TableData]], props: P[TableProperties]) extends Component[NoEmit] { //P constante
 
     override def render(get: Get): Node = {
 
@@ -145,10 +140,13 @@ trait ReactTable[TableData] {
 
       Paper(
         Table(
+
           Component(ReactTableHeader, p),
 
           Tags(get(data).map { r =>
-            Component(ReactTableRow, r, p).withKey(p.keyExtractor(r))
+
+            Component(ReactTableRow, r, p).withKey((p.keyExtractor(r)))
+
           })
         )
       )
