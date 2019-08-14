@@ -15,6 +15,16 @@ import scala.reflect.ClassTag
   */
 trait ReactTable[TableData] {
 
+  case class OrderState(
+    colName: String,
+    ascending : Boolean
+   )
+
+  sealed trait TableEvent
+  case class OrderChangeEvent(
+    newState : OrderState,
+  )extends  TableEvent
+
   /**
     * A cell renderer takes an instance of TableData and renders it as a Tag. Each ColumnConfig has a cell renderer to
     * determine the rendered item.
@@ -55,7 +65,7 @@ trait ReactTable[TableData] {
     name : String,
     renderer : CellRenderer[_],
     numeric : Boolean = false,
-    width : Option[String] = None
+    width : Option[String] = None,
   )
 
 
@@ -64,7 +74,9 @@ trait ReactTable[TableData] {
     // The configuration of the table columns
     columns: Seq[ColumnConfig] = Seq.empty,
     searchExtractor : TableData => String = { _.toString() },
-    keyExtractor : TableData => String = { _.hashCode().toString() }
+    keyExtractor : TableData => String = { _.hashCode().toString() },
+
+
   )
 
   /**
@@ -83,9 +95,7 @@ trait ReactTable[TableData] {
       // bundle the entire row into a div with the appropriate style
       TableRow(
 
-        Tags(cells),
-        A.onLeftClick({ _ =>println(get(row))})
-
+        Tags(cells)
 
       )
     }
@@ -96,31 +106,47 @@ trait ReactTable[TableData] {
     * @param props are the table properties defining the table display
     */
   final case class ReactTableHeader(
-    props: P[TableProperties]
-  ) extends Component[NoEmit] {
+    props: P[TableProperties],
+    orderState: P[Option[OrderState]]
+  ) extends Component[TableEvent] {
+
+
 
     override def render(get: Get): Node = {
+      val tableProps : TableProperties = get(props)
+      val order : Option[OrderState] = get(orderState)
+
       TableHead(
 
+        Tags(
+            tableProps.columns.map { cfg =>
+              TableCell(
+                J("numeric", cfg.numeric),
 
+                Text(cfg.name.capitalize),
 
+                A.onLeftClick({ _ =>
+                  val newState : OrderState = order match {
+                    case None =>
+                      OrderState(cfg.name,ascending = true)
 
-          Tags(
+                    case Some(OrderState(cfg.name, sortType)) if(order.map(_.colName).contains(cfg.name)) =>
+                      OrderState(cfg.name, !sortType)
 
+                    case Some(OrderState(x,_)) =>
+                      OrderState(cfg.name, ascending = true)
 
-            get(props).columns.map { cfg =>
-              TableCell(J("numeric", cfg.numeric),Text(cfg.name.capitalize),IconButton(
-                IconStyles,
-                RemoveCircleIcon(A.onLeftClick({ _ =>println("IconPressed")})
+                  }
+                  emit(OrderChangeEvent(newState))
+                }),
+                IconButton(IconStyles, AddCircleIcon()).when(
+                  order.map(_.colName).contains(cfg.name) && order.map(_.ascending).contains(true)
+                ),
+                IconButton(IconStyles, RemoveCircleIcon()).when(
+                  order.map(_.colName).contains(cfg.name) && order.map(_.ascending).contains(false)
 
                 )
-
-
-              ),
-
-
-
-          )
+              )
             },
 
           )
@@ -132,7 +158,10 @@ trait ReactTable[TableData] {
     }
   }
 
-  final case class ReactTable(data: P[Seq[TableData]], props: P[TableProperties]) extends Component[NoEmit] { //P constante
+  final case class ReactTable(data: P[Seq[TableData]], props: P[TableProperties]) extends Component[TableEvent] { //P constante
+
+    private val orderState : State[Option[OrderState]] = State(None)
+
 
     override def render(get: Get): Node = {
 
@@ -141,13 +170,19 @@ trait ReactTable[TableData] {
       Paper(
         Table(
 
-          Component(ReactTableHeader, p),
+          Component(ReactTableHeader, p, get(orderState)).withHandler{
+            case s : OrderChangeEvent => orderState.set(Some(s.newState))
+              emit(s)
+          },
 
-          Tags(get(data).map { r =>
+
+          Tags(
+            get(data).map { r =>
 
             Component(ReactTableRow, r, p).withKey((p.keyExtractor(r)))
 
-          })
+            }
+          )
         )
       )
     }
